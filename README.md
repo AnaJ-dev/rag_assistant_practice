@@ -31,9 +31,3 @@ An n8n RAG workflow that answers questions from a PDF employee handbook using ve
 
 **Not found**
 - Company pension contribution percentage → routed to `needs_review`
-
-## Tech
-
-n8n · Gemini · Embeddings · Vector Store · RAG · Data Tables
-
-> The employee handbook used in this project is fictional and was created only for automation practice.
