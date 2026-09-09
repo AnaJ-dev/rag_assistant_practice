@@ -1,0 +1,554 @@
+{
+  "name": "Document RAG Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "Doc storage",
+        "height": 96,
+        "width": 192
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        -128
+      ],
+      "id": "19fb47c4-49dd-4312-b86c-a5008922543d",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "Retrieve info from document",
+        "height": 96,
+        "width": 192
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        32,
+        640
+      ],
+      "id": "bca1860a-68b4-48fb-8eb2-9ce290851720",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Using only the handbook context below, decide whether the question can actually be answered from the context.\n\nQuestion:\n{{ $('Set Question').item.json.question }}\n\nContext:\n{{ $json.MergeDataChunks }}\n\nIf the context contains the answer, respond exactly in this format:\n\nFOUND\nAnswer: [answer]\nSource: {{ $('Retrieve Relevant Text Chunks').first().json.document.metadata.source }}\n\nIf the context does not contain enough information to answer the question, respond exactly:\n\nNOT_FOUND",
+        "messages": {
+          "messageValues": []
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1248,
+        800
+      ],
+      "id": "53490407-1480-4870-bbee-3bf6329d3220",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.1-flash-lite-preview",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1248,
+        1232
+      ],
+      "id": "ec3f2842-5814-4162-bde0-d4870652156f",
+      "name": "Google Gemini Chat Model"
+    },
+    {
+      "parameters": {
+        "formTitle": "Form",
+        "formDescription": "Form",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Form Trigger",
+              "fieldType": "file"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        0
+      ],
+      "id": "181778b0-f1d3-47d3-b52a-5bafb51c59c7",
+      "name": "Upload Document",
+      "notesInFlow": true,
+      "notes": "We use a file field because the PDF/document needs to enter n8n as binary data"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "memoryKey": {
+          "__rl": true,
+          "value": "employee_handbook",
+          "mode": "list"
+        },
+        "clearStore": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        224,
+        0
+      ],
+      "id": "4a467dbf-d873-4cf0-b827-2a2ac62a8198",
+      "name": "Store Document Vectors",
+      "notesInFlow": true,
+      "notes": "take our document chunks + embeddings and store them so we can search them later."
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        224,
+        352
+      ],
+      "id": "e027eb26-b6e4-4161-8623-20fb27d4e86e",
+      "name": "Embeddings -Embed Document Chunks"
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 200,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        448,
+        480
+      ],
+      "id": "82e0f64f-d617-4242-ac76-94c571e91594",
+      "name": "Split Document into Chunks"
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "binaryMode": "specificField",
+        "binaryDataKey": "Form_Trigger",
+        "textSplittingMode": "custom",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "source",
+                "value": "week9_employee_handbook_rag_practice.pdf"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        448,
+        272
+      ],
+      "id": "9db04e0a-31ef-4763-b9f6-1b812674f781",
+      "name": "Extract PDF Text"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        64,
+        800
+      ],
+      "id": "d01396cd-f982-4a60-8127-04a9fd92d68e",
+      "name": "Ask Question"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "79dd6691-df7d-4d5d-a53b-d6c8adc3243a",
+              "name": "question",
+              "value": "What percentage does the company contribute to my pension?",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        272,
+        800
+      ],
+      "id": "f9eb94cd-e3ae-4e96-b97e-de74e551bdd6",
+      "name": "Set Question"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        528,
+        1168
+      ],
+      "id": "6ae90cb3-4da8-4973-a644-f1417d1f7b2f",
+      "name": "Embeddings - Embed Question"
+    },
+    {
+      "parameters": {
+        "mode": "load",
+        "memoryKey": {
+          "__rl": true,
+          "value": "employee_handbook",
+          "mode": "list",
+          "cachedResultName": "employee_handbook"
+        },
+        "prompt": "={{ $json.question }}",
+        "topK": 3
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        528,
+        800
+      ],
+      "id": "09734c11-c786-4b53-8df7-8ac0572a37cc",
+      "name": "Retrieve Relevant Text Chunks"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "document.pageContent",
+              "renameField": true,
+              "outputFieldName": "MergeDataChunks"
+            },
+            {
+              "fieldToAggregate": "score",
+              "renameField": true,
+              "outputFieldName": "MergeScores"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        992,
+        800
+      ],
+      "id": "ee8e96f7-16c3-4a88-95bd-deda5d7c43f7",
+      "name": "Aggregate text"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "89e615d7-daf5-417f-bb53-fe82e9bbd87d",
+              "leftValue": "={{ $json.text }}",
+              "rightValue": "=FOUND",
+              "operator": {
+                "type": "string",
+                "operation": "startsWith"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1632,
+        800
+      ],
+      "id": "e2821a0d-74fb-4d96-93b9-1bbb95a4d622",
+      "name": "If Answer Found?"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"answer\": \"{{ $json.text }}\",\n  \"status\": \"answer\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1840,
+        784
+      ],
+      "id": "c3f07a2d-41e5-4510-bacd-5bb9b2785207",
+      "name": "Format Answer for true"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"question\":\"{{ $('Set Question').item.json.question }}\"\n  \"answer\": \"I can't find this information in the handbook.\"\n  \"source\": \"Not available\",\n\"status\": \"needs_review\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1744,
+        1280
+      ],
+      "id": "1c527388-57c5-4b15-82b5-2080a45d5cf5",
+      "name": "Review Case For False"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_YOUR_DATA_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "data_review"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "source": "={{ $json.source }}",
+            "answer": "={{ $json.answer }}",
+            "question": "={{ $json.question }}",
+            "status": "={{ $json.status }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "question",
+              "displayName": "question",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "answer",
+              "displayName": "answer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2176,
+        1280
+      ],
+      "id": "dfb22d77-5455-4084-8edd-8d9a660a394e",
+      "name": "Manual Review"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "If Answer Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Document": {
+      "main": [
+        [
+          {
+            "node": "Store Document Vectors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings -Embed Document Chunks": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Store Document Vectors",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Document into Chunks": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Extract PDF Text",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract PDF Text": {
+      "ai_document": [
+        [
+          {
+            "node": "Store Document Vectors",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ask Question": {
+      "main": [
+        [
+          {
+            "node": "Set Question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Question": {
+      "main": [
+        [
+          {
+            "node": "Retrieve Relevant Text Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings - Embed Question": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Retrieve Relevant Text Chunks",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieve Relevant Text Chunks": {
+      "main": [
+        [
+          {
+            "node": "Aggregate text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate text": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Answer Found?": {
+      "main": [
+        [
+          {
+            "node": "Format Answer for true",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Review Case For False",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Review Case For False": {
+      "main": [
+        [
+          {
+            "node": "Manual Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "nodeGroups": [],
+  "tags": []
+}
