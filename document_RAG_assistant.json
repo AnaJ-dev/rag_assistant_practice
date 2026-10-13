@@ -305,7 +305,7 @@
     {
       "parameters": {
         "mode": "raw",
-        "jsonOutput": "={\n  \"question\":\"{{ $('Set Question').item.json.question }}\"\n  \"answer\": \"I can't find this information in the handbook.\"\n  \"source\": \"Not available\",\n\"status\": \"needs_review\"\n}\n",
+  "jsonOutput": "={\n  \"question\":\"{{ $('Set Question').item.json.question }}\",\n  \"answer\": \"I can't find this information in the handbook.\",\n  \"source\": \"Not available\",\n  \"status\": \"needs_review\"\n}\n",
         "options": {}
       },
       "type": "n8n-nodes-base.set",
